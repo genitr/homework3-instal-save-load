@@ -5,12 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class Main {
     public static void main(String[] args) {
 
-        final int save_Dir = 2; // директория для сохранения
         StringBuilder sb = new StringBuilder();
 
         // список директорий
@@ -24,6 +24,8 @@ public class Main {
         gameDirectories.add(new File("C:\\Games\\res\\drawables"));
         gameDirectories.add(new File("C:\\Games\\res\\vectors"));
         gameDirectories.add(new File("C:\\Games\\res\\icons"));
+
+        final String save_Dir = String.valueOf(gameDirectories.get(2));
 
         // список файлов
         List<File> gameFiles = new ArrayList<>();
@@ -40,11 +42,17 @@ public class Main {
 
         List<String> saveList = new ArrayList<>();
 
-        // Сохоанение
-        saveGame(String.valueOf(gameDirectories.get(save_Dir)), gameProgress, saveList);
-        // Загрузка
-        zipFiles(String.valueOf(gameDirectories.get(save_Dir)), saveList);
+        // Сохранение
+        saveGame(save_Dir, gameProgress, saveList);
 
+        zipFiles(save_Dir, saveList);
+
+        // Загрузка
+        openZip(save_Dir, save_Dir);
+
+        openProgress(save_Dir, gameProgress.get(0));
+
+        System.out.println(gameProgress.get(0));
     }
 
     public static void createDirectory(File dir, StringBuilder gameLog) {
@@ -130,6 +138,37 @@ public class Main {
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
+    }
+
+    public static void openZip(String zipPath, String path) {
+        String zipName = "\\save.zip";
+        try(ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath + zipName))) {
+            ZipEntry entry;
+            String fileName;
+            while ((entry = zis.getNextEntry()) != null) {
+                fileName = entry.getName();
+                FileOutputStream fos = new FileOutputStream(path + "\\" + fileName);
+                for (int c = zis.read(); c!= -1; c = zis.read()) {
+                    fos.write(c);
+                }
+                fos.flush();
+                zis.closeEntry();
+                fos.close();
+            }
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
+
+    public static GameProgress openProgress(String path, GameProgress progress) {
+        String fileName = "\\save.dat";
+        try(FileInputStream fis = new FileInputStream(path)) {
+            ObjectInputStream ois = new ObjectInputStream(fis);
+            progress = (GameProgress) ois.readObject();
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
+        }
+        return progress;
     }
 
 }
